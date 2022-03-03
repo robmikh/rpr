@@ -69,7 +69,7 @@ fn main() -> Result<()> {
             stop_trace(&name);
 
             let provider_id: GUID = provider.as_str().into();
-            let handle = start_trace(&name, &provider_id);
+            let _handle = start_trace(&name, &provider_id);
         }
         Commands::Stop { name } => {
             stop_trace(&name);
