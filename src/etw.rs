@@ -78,7 +78,7 @@ pub fn start_trace(session_name: &str, provider_id: &GUID) -> Result<u64> {
     Ok(handle)
 }
 
-pub fn stop_trace(session_name: &str) -> Result<()> {
+pub fn stop_trace(session_name: &str) -> Result<bool> {
     let mut properties = EventTraceProperties::new(session_name);
     let error = unsafe {
         WIN32_ERROR(ControlTraceW(
@@ -89,7 +89,7 @@ pub fn stop_trace(session_name: &str) -> Result<()> {
         ))
     };
     if error == ERROR_WMI_INSTANCE_NOT_FOUND {
-        return Ok(());
+        return Ok(false);
     }
     error.ok()?;
     let handle = unsafe { properties.properties.Wnode.Anonymous1.HistoricalContext };
@@ -103,5 +103,5 @@ pub fn stop_trace(session_name: &str) -> Result<()> {
         ))
         .ok()?;
     };
-    Ok(())
+    Ok(true)
 }

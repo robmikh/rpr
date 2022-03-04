@@ -31,13 +31,18 @@ fn main() -> Result<()> {
 
     match args.command {
         Commands::Start { name, provider } => {
-            stop_trace(&name)?;
+            if stop_trace(&name)? {
+                println!("Stopped previous session.");
+            }
 
             let provider_id: GUID = provider.as_str().into();
             let _handle = start_trace(&name, &provider_id)?;
+            println!("Trace started.");
         }
         Commands::Stop { name } => {
-            stop_trace(&name)?;
+            if !stop_trace(&name)? {
+                println!("No session with name \"{}\" found.", name);
+            }
         }
     }
 
