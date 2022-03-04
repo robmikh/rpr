@@ -23,29 +23,35 @@ pub struct EventTraceProperties {
 }
 
 impl EventTraceProperties {
-    pub fn new(session_name: &str) -> Self {
+    fn basic(session_name: &str, file: &str) -> Self {
         let wide_logger_name: Vec<u16> = session_name.encode_utf16().collect();
-        let wide_log_file_name: Vec<u16> = format!("{}.etl", session_name).encode_utf16().collect();
-        let mut logger_name_array = [0u16; 256];
-        let mut log_file_name_array = [0u16; 256];
-        logger_name_array[0..wide_logger_name.len()].copy_from_slice(&wide_logger_name);
-        log_file_name_array[0..wide_log_file_name.len()].copy_from_slice(&wide_log_file_name);
+        let wide_log_file_name: Vec<u16> = file.encode_utf16().collect();
         let mut result = Self {
             properties: Default::default(),
-            logger_name: logger_name_array,
-            log_file_name: log_file_name_array,
+            logger_name: [0u16; 256],
+            log_file_name: [0u16; 256],
         };
         result.properties.Wnode.BufferSize = std::mem::size_of::<EventTraceProperties>() as u32;
         result.properties.LoggerNameOffset =
             offset_of!(result, EventTraceProperties, logger_name) as u32;
         result.properties.LogFileNameOffset =
             offset_of!(result, EventTraceProperties, log_file_name) as u32;
+        result.logger_name[0..wide_logger_name.len()].copy_from_slice(&wide_logger_name);
+        result.log_file_name[0..wide_log_file_name.len()].copy_from_slice(&wide_log_file_name);
         result
+    }
+
+    pub fn new(session_name: &str) -> Self {
+        Self::basic(session_name, "")
+    }
+
+    pub fn new_with_file(session_name: &str, file: &str) -> Self {
+        Self::basic(session_name, file)
     }
 }
 
-pub fn start_trace(session_name: &str, provider_id: &GUID) -> Result<u64> {
-    let mut properties = EventTraceProperties::new(session_name);
+pub fn start_trace(session_name: &str, file: &str, provider_id: &GUID) -> Result<u64> {
+    let mut properties = EventTraceProperties::new_with_file(session_name, file);
     properties.properties.Wnode.Flags = WNODE_FLAG_TRACED_GUID;
     properties.properties.BufferSize = 1024;
     properties.properties.LogFileMode = EVENT_TRACE_FILE_MODE_SEQUENTIAL;

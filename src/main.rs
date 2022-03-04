@@ -1,6 +1,8 @@
 mod etw;
 mod result;
 
+use std::path::Path;
+
 use clap::{Parser, Subcommand};
 use etw::{start_trace, stop_trace};
 use windows::core::{Result, GUID};
@@ -18,6 +20,8 @@ enum Commands {
         #[clap(short, long)]
         name: String,
         #[clap(short, long)]
+        file: Option<String>,
+        #[clap(short, long)]
         provider: String,
     },
     Stop {
@@ -30,21 +34,65 @@ fn main() -> Result<()> {
     let args = Args::parse();
 
     match args.command {
-        Commands::Start { name, provider } => {
+        Commands::Start {
+            name,
+            file,
+            provider,
+        } => {
+            // Stop the previous session if it exists
             if stop_trace(&name)? {
                 println!("Stopped previous session.");
             }
 
+            // Validate the file path and create any folders
+            let file = if let Some(file) = file {
+                if !validate_path(&file) {
+                    exit_with_error("Invalid file specified!");
+                }
+                ensure_path(&file);
+                file
+            } else {
+                format!("{}.etl", name)
+            };
+
+            // Start the tracing session
             let provider_id: GUID = provider.as_str().into();
-            let _handle = start_trace(&name, &provider_id)?;
+            let _handle = start_trace(&name, &file, &provider_id)?;
             println!("Trace started.");
         }
         Commands::Stop { name } => {
             if !stop_trace(&name)? {
                 println!("No session with name \"{}\" found.", name);
+            } else {
+                println!("Trace stopped.");
             }
         }
     }
 
     Ok(())
+}
+
+fn validate_path<P: AsRef<Path>>(path: P) -> bool {
+    let path = path.as_ref();
+    let mut valid = true;
+    if let Some(extension) = path.extension() {
+        if extension != "etl" {
+            valid = false;
+        }
+    } else {
+        valid = false;
+    }
+    valid
+}
+
+fn ensure_path<P: AsRef<Path>>(path: P) {
+    let path = path.as_ref();
+    if let Some(parent_path) = path.parent() {
+        std::fs::create_dir_all(parent_path).unwrap();
+    }
+}
+
+fn exit_with_error(message: &str) -> ! {
+    println!("{}", message);
+    std::process::exit(1);
 }
