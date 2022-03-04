@@ -1,6 +1,6 @@
 [package]
 name = "rpr"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["robmikh <rob.mikh@outlook.com>"]
 description = "A utility to record ETW traces."
 edition = "2021"
