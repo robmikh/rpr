@@ -1,11 +1,14 @@
 use bytemuck::offset_of;
 use clap::{Parser, Subcommand};
 use windows::{
-    core::{Result, GUID},
-    Win32::System::Diagnostics::Etw::{
-        ControlTraceW, EnableTraceEx2, StartTraceW, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
-        EVENT_TRACE_CONTROL_QUERY, EVENT_TRACE_CONTROL_STOP, EVENT_TRACE_FILE_MODE_SEQUENTIAL,
-        EVENT_TRACE_PROPERTIES, TRACE_LEVEL_VERBOSE, WNODE_FLAG_TRACED_GUID,
+    core::{Result, GUID, HRESULT},
+    Win32::{
+        Foundation::{ERROR_WMI_INSTANCE_NOT_FOUND, WIN32_ERROR},
+        System::Diagnostics::Etw::{
+            ControlTraceW, EnableTraceEx2, StartTraceW, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
+            EVENT_TRACE_CONTROL_QUERY, EVENT_TRACE_CONTROL_STOP, EVENT_TRACE_FILE_MODE_SEQUENTIAL,
+            EVENT_TRACE_PROPERTIES, TRACE_LEVEL_VERBOSE, WNODE_FLAG_TRACED_GUID,
+        },
     },
 };
 
@@ -66,20 +69,20 @@ fn main() -> Result<()> {
 
     match args.command {
         Commands::Start { name, provider } => {
-            stop_trace(&name);
+            stop_trace(&name)?;
 
             let provider_id: GUID = provider.as_str().into();
-            let _handle = start_trace(&name, &provider_id);
+            let _handle = start_trace(&name, &provider_id)?;
         }
         Commands::Stop { name } => {
-            stop_trace(&name);
+            stop_trace(&name)?;
         }
     }
 
     Ok(())
 }
 
-fn start_trace(session_name: &str, provider_id: &GUID) -> u64 {
+fn start_trace(session_name: &str, provider_id: &GUID) -> Result<u64> {
     let mut properties = EventTraceProperties::new(session_name);
     properties.properties.Wnode.Flags = WNODE_FLAG_TRACED_GUID;
     properties.properties.BufferSize = 1024;
@@ -88,12 +91,17 @@ fn start_trace(session_name: &str, provider_id: &GUID) -> u64 {
     properties.properties.FlushTimer = 1;
 
     let mut handle = 0;
-    let status = unsafe { StartTraceW(&mut handle, session_name, &mut properties.properties) };
-    if status != 0 {
-        panic!("{}", status);
-    }
-    let status = unsafe {
-        EnableTraceEx2(
+    unsafe {
+        WIN32_ERROR(StartTraceW(
+            &mut handle,
+            session_name,
+            &mut properties.properties,
+        ))
+        .ok()?
+    };
+    assert_ne!(handle, 0);
+    unsafe {
+        WIN32_ERROR(EnableTraceEx2(
             handle,
             provider_id,
             EVENT_CONTROL_CODE_ENABLE_PROVIDER.0,
@@ -102,38 +110,47 @@ fn start_trace(session_name: &str, provider_id: &GUID) -> u64 {
             0,
             INFINITE,
             std::ptr::null(),
-        )
+        ))
+        .ok()?;
     };
-    if status != 0 {
-        panic!("{}", status);
-    }
-    handle
+    Ok(handle)
 }
 
-fn stop_trace(session_name: &str) {
+fn stop_trace(session_name: &str) -> Result<()> {
     let mut properties = EventTraceProperties::new(session_name);
-    let status = unsafe {
-        ControlTraceW(
+    let error = unsafe {
+        WIN32_ERROR(ControlTraceW(
             0,
             session_name,
             &mut properties.properties,
             EVENT_TRACE_CONTROL_QUERY,
-        )
+        ))
     };
-    if status != 0 {
-        return;
+    if error == ERROR_WMI_INSTANCE_NOT_FOUND {
+        return Ok(());
     }
+    error.ok()?;
     let handle = unsafe { properties.properties.Wnode.Anonymous1.HistoricalContext };
-    //println!("handle: {}", handle);
-    let status = unsafe {
-        ControlTraceW(
+    assert_ne!(handle, 0);
+    unsafe {
+        WIN32_ERROR(ControlTraceW(
             handle,
             None,
             &mut properties.properties,
             EVENT_TRACE_CONTROL_STOP,
-        )
+        ))
+        .ok()?;
     };
-    if status != 0 {
-        panic!("{}", status);
+    Ok(())
+}
+
+trait ToWindowsResult {
+    fn ok(self) -> Result<()>;
+}
+
+impl ToWindowsResult for WIN32_ERROR {
+    fn ok(self) -> Result<()> {
+        let hresult: HRESULT = self.into();
+        hresult.ok()
     }
 }
