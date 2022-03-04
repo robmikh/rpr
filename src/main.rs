@@ -16,15 +16,21 @@ struct Args {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
+    /// Starts a trace with a given provider
     Start {
         #[clap(short, long)]
+        /// Name of the session
         name: String,
         #[clap(short, long)]
+        /// Output file (defaults to "<NAME>.etl")
         file: Option<String>,
+        /// ETW provider to enable and trace
         #[clap(short, long)]
         provider: String,
     },
+    /// Stops an ongoing trace session
     Stop {
+        /// Name of the session to stop
         #[clap(short, long)]
         name: String,
     },
