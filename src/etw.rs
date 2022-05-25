@@ -11,8 +11,6 @@ use windows::{
     },
 };
 
-use crate::result::ToWindowsResult;
-
 const INFINITE: u32 = 0xFFFFFFFF;
 
 #[repr(C)]
