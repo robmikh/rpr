@@ -7,6 +7,7 @@ use std::path::Path;
 use clap::{Parser, Subcommand};
 use etw::{start_trace, stop_trace};
 use providers::enumerate_providers;
+use wildmatch::WildMatch;
 use windows::core::{Result, GUID};
 
 #[derive(Parser, Debug)]
@@ -37,7 +38,11 @@ enum Commands {
         name: String,
     },
     /// Lists the registered providers on the system
-    List,
+    List {
+        /// Search string. Supports wildcard matches.
+        #[clap(short, long)]
+        search: Option<String>,
+    },
 }
 
 fn main() -> Result<()> {
@@ -77,9 +82,19 @@ fn main() -> Result<()> {
                 println!("Trace stopped.");
             }
         }
-        Commands::List => {
+        Commands::List { search } => {
             let providers = enumerate_providers()?;
+            let wildmatch = if let Some(search) = search {
+                Some(WildMatch::new(&search.to_lowercase()))
+            } else {
+                None
+            };
             for provider in providers {
+                if let Some(wildmatch) = wildmatch.as_ref() {
+                    if !wildmatch.matches(&provider.name.to_lowercase()) {
+                        continue;
+                    }
+                }
                 println!("{} - {:?}", provider.name, provider.guid);
             }
         }

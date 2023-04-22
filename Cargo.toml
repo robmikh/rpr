@@ -6,8 +6,9 @@ description = "A utility to record ETW traces."
 edition = "2021"
 
 [dependencies]
-bytemuck = "1.8.0"
-clap = { version = "3.2.6", features = ["derive"] }
+bytemuck = "1.13.1"
+clap = { version = "4.2.4", features = ["derive"] }
+wildmatch = "2.1.1"
 
 [dependencies.windows]
 version = "0.48.0"
