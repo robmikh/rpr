@@ -1,10 +1,12 @@
 mod etw;
+mod providers;
 mod result;
 
 use std::path::Path;
 
 use clap::{Parser, Subcommand};
 use etw::{start_trace, stop_trace};
+use providers::enumerate_providers;
 use windows::core::{Result, GUID};
 
 #[derive(Parser, Debug)]
@@ -34,6 +36,8 @@ enum Commands {
         #[clap(short, long)]
         name: String,
     },
+    /// Lists the registered providers on the system
+    List,
 }
 
 fn main() -> Result<()> {
@@ -71,6 +75,12 @@ fn main() -> Result<()> {
                 println!("No session with name \"{}\" found.", name);
             } else {
                 println!("Trace stopped.");
+            }
+        }
+        Commands::List => {
+            let providers = enumerate_providers()?;
+            for provider in providers {
+                println!("{} - {:?}", provider.name, provider.guid);
             }
         }
     }

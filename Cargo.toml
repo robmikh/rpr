@@ -10,9 +10,8 @@ bytemuck = "1.8.0"
 clap = { version = "3.2.6", features = ["derive"] }
 
 [dependencies.windows]
-version = "0.38.0"
+version = "0.48.0"
 features = [
-    "alloc",
     "Win32_Foundation",
     "Win32_System_Diagnostics_Etw",
     "Win32_System_Time",

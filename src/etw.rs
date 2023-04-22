@@ -1,12 +1,13 @@
 use bytemuck::offset_of;
 use windows::{
-    core::{Result, GUID},
+    core::{Result, GUID, HSTRING},
     Win32::{
-        Foundation::{ERROR_WMI_INSTANCE_NOT_FOUND, WIN32_ERROR},
+        Foundation::ERROR_WMI_INSTANCE_NOT_FOUND,
         System::Diagnostics::Etw::{
-            ControlTraceW, EnableTraceEx2, StartTraceW, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
-            EVENT_TRACE_CONTROL_QUERY, EVENT_TRACE_CONTROL_STOP, EVENT_TRACE_FILE_MODE_SEQUENTIAL,
-            EVENT_TRACE_PROPERTIES, TRACE_LEVEL_VERBOSE, WNODE_FLAG_TRACED_GUID,
+            ControlTraceW, EnableTraceEx2, StartTraceW, CONTROLTRACE_HANDLE,
+            EVENT_CONTROL_CODE_ENABLE_PROVIDER, EVENT_TRACE_CONTROL_QUERY,
+            EVENT_TRACE_CONTROL_STOP, EVENT_TRACE_FILE_MODE_SEQUENTIAL, EVENT_TRACE_PROPERTIES,
+            TRACE_LEVEL_VERBOSE, WNODE_FLAG_TRACED_GUID,
         },
     },
 };
@@ -48,7 +49,11 @@ impl EventTraceProperties {
     }
 }
 
-pub fn start_trace(session_name: &str, file: &str, provider_id: &GUID) -> Result<u64> {
+pub fn start_trace(
+    session_name: &str,
+    file: &str,
+    provider_id: &GUID,
+) -> Result<CONTROLTRACE_HANDLE> {
     let mut properties = EventTraceProperties::new_with_file(session_name, file);
     properties.properties.Wnode.Flags = WNODE_FLAG_TRACED_GUID;
     properties.properties.BufferSize = 1024;
@@ -56,18 +61,18 @@ pub fn start_trace(session_name: &str, file: &str, provider_id: &GUID) -> Result
     properties.properties.MinimumBuffers = 300;
     properties.properties.FlushTimer = 1;
 
-    let mut handle = 0;
+    let mut handle = CONTROLTRACE_HANDLE::default();
     unsafe {
-        WIN32_ERROR(StartTraceW(
+        StartTraceW(
             &mut handle,
-            session_name,
+            &HSTRING::from(session_name),
             &mut properties.properties,
-        ))
+        )
         .ok()?
     };
-    assert_ne!(handle, 0);
+    assert_ne!(handle.0, 0);
     unsafe {
-        WIN32_ERROR(EnableTraceEx2(
+        EnableTraceEx2(
             handle,
             provider_id,
             EVENT_CONTROL_CODE_ENABLE_PROVIDER.0,
@@ -75,8 +80,8 @@ pub fn start_trace(session_name: &str, file: &str, provider_id: &GUID) -> Result
             0,
             0,
             INFINITE,
-            std::ptr::null(),
-        ))
+            None,
+        )
         .ok()?;
     };
     Ok(handle)
@@ -85,12 +90,12 @@ pub fn start_trace(session_name: &str, file: &str, provider_id: &GUID) -> Result
 pub fn stop_trace(session_name: &str) -> Result<bool> {
     let mut properties = EventTraceProperties::new(session_name);
     let error = unsafe {
-        WIN32_ERROR(ControlTraceW(
-            0,
-            session_name,
+        ControlTraceW(
+            CONTROLTRACE_HANDLE(0),
+            &HSTRING::from(session_name),
             &mut properties.properties,
             EVENT_TRACE_CONTROL_QUERY,
-        ))
+        )
     };
     if error == ERROR_WMI_INSTANCE_NOT_FOUND {
         return Ok(false);
@@ -99,12 +104,12 @@ pub fn stop_trace(session_name: &str) -> Result<bool> {
     let handle = unsafe { properties.properties.Wnode.Anonymous1.HistoricalContext };
     assert_ne!(handle, 0);
     unsafe {
-        WIN32_ERROR(ControlTraceW(
-            handle,
+        ControlTraceW(
+            CONTROLTRACE_HANDLE(0),
             None,
             &mut properties.properties,
             EVENT_TRACE_CONTROL_STOP,
-        ))
+        )
         .ok()?;
     };
     Ok(true)
