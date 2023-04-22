@@ -1,4 +1,5 @@
 mod etw;
+mod guid;
 mod providers;
 mod result;
 
@@ -6,6 +7,7 @@ use std::path::Path;
 
 use clap::{Parser, Subcommand};
 use etw::{start_trace, stop_trace};
+use guid::TryParse;
 use providers::enumerate_providers;
 use wildmatch::WildMatch;
 use windows::core::{Result, GUID};
@@ -27,7 +29,7 @@ enum Commands {
         #[clap(short, long)]
         /// Output file (defaults to "<NAME>.etl")
         file: Option<String>,
-        /// ETW provider to enable and trace
+        /// ETW provider to enable and trace. Can be either a GUID or exact provider name.
         #[clap(short, long)]
         provider: String,
     },
@@ -71,9 +73,23 @@ fn main() -> Result<()> {
             };
 
             // Start the tracing session
-            let provider_id: GUID = provider.as_str().into();
-            let _handle = start_trace(&name, &file, &provider_id)?;
-            println!("Trace started.");
+            let provider_str = provider.as_str();
+            let provider_id: Option<GUID> = if let Some(provider) = provider_str.try_parse() {
+                Some(provider)
+            } else {
+                let providers = enumerate_providers()?;
+                let provider_info = providers.iter().find(|x| x.name == provider_str);
+                if let Some(provider_info) = provider_info {
+                    Some(provider_info.guid)
+                } else {
+                    println!("No provider with name \"{}\" found.", provider_str);
+                    None
+                }
+            };
+            if let Some(provider_id) = provider_id {
+                let _handle = start_trace(&name, &file, &provider_id)?;
+                println!("Trace started.");
+            }
         }
         Commands::Stop { name } => {
             if !stop_trace(&name)? {
