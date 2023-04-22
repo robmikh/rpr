@@ -105,7 +105,7 @@ pub fn stop_trace(session_name: &str) -> Result<bool> {
     assert_ne!(handle, 0);
     unsafe {
         ControlTraceW(
-            CONTROLTRACE_HANDLE(0),
+            CONTROLTRACE_HANDLE(handle),
             None,
             &mut properties.properties,
             EVENT_TRACE_CONTROL_STOP,
