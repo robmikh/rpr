@@ -70,7 +70,7 @@ pub fn start_trace(
         )
         .ok()?
     };
-    assert_ne!(handle.0, 0);
+    assert_ne!(handle.Value, 0);
     unsafe {
         EnableTraceEx2(
             handle,
@@ -91,7 +91,7 @@ pub fn stop_trace(session_name: &str) -> Result<bool> {
     let mut properties = EventTraceProperties::new(session_name);
     let error = unsafe {
         ControlTraceW(
-            CONTROLTRACE_HANDLE(0),
+            CONTROLTRACE_HANDLE { Value: 0 },
             &HSTRING::from(session_name),
             &mut properties.properties,
             EVENT_TRACE_CONTROL_QUERY,
@@ -105,7 +105,7 @@ pub fn stop_trace(session_name: &str) -> Result<bool> {
     assert_ne!(handle, 0);
     unsafe {
         ControlTraceW(
-            CONTROLTRACE_HANDLE(handle),
+            CONTROLTRACE_HANDLE { Value: handle },
             None,
             &mut properties.properties,
             EVENT_TRACE_CONTROL_STOP,
