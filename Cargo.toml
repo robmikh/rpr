@@ -3,7 +3,7 @@ name = "rpr"
 version = "0.3.0"
 authors = ["robmikh <rob.mikh@outlook.com>"]
 description = "A utility to record ETW traces."
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 bytemuck = "1.22.0"
