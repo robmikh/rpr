@@ -1,15 +1,15 @@
 use bytemuck::offset_of;
 use windows::{
-    core::{Result, GUID, HSTRING},
     Win32::{
         Foundation::ERROR_WMI_INSTANCE_NOT_FOUND,
         System::Diagnostics::Etw::{
-            ControlTraceW, EnableTraceEx2, StartTraceW, CONTROLTRACE_HANDLE,
-            EVENT_CONTROL_CODE_ENABLE_PROVIDER, EVENT_TRACE_CONTROL_QUERY,
-            EVENT_TRACE_CONTROL_STOP, EVENT_TRACE_FILE_MODE_SEQUENTIAL, EVENT_TRACE_PROPERTIES,
-            TRACE_LEVEL_VERBOSE, WNODE_FLAG_TRACED_GUID,
+            CONTROLTRACE_HANDLE, ControlTraceW, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
+            EVENT_TRACE_CONTROL_QUERY, EVENT_TRACE_CONTROL_STOP, EVENT_TRACE_FILE_MODE_SEQUENTIAL,
+            EVENT_TRACE_PROPERTIES, EnableTraceEx2, StartTraceW, TRACE_LEVEL_VERBOSE,
+            WNODE_FLAG_TRACED_GUID,
         },
     },
+    core::{GUID, HSTRING, Result},
 };
 
 const INFINITE: u32 = 0xFFFFFFFF;

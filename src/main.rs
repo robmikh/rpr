@@ -1,7 +1,6 @@
 mod etw;
 mod guid;
 mod providers;
-mod result;
 
 use std::path::Path;
 
@@ -10,7 +9,7 @@ use etw::{start_trace, stop_trace};
 use guid::TryParse;
 use providers::enumerate_providers;
 use wildmatch::WildMatch;
-use windows::core::{Result, GUID};
+use windows::core::{GUID, Result};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]

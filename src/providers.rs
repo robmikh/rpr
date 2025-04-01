@@ -1,15 +1,15 @@
 use windows::{
-    core::{Result, GUID},
     Win32::{
         Foundation::{ERROR_INSUFFICIENT_BUFFER, WIN32_ERROR},
-        System::Diagnostics::Etw::{TdhEnumerateProviders, PROVIDER_ENUMERATION_INFO},
+        System::Diagnostics::Etw::{PROVIDER_ENUMERATION_INFO, TdhEnumerateProviders},
     },
+    core::{GUID, Result},
 };
 
 pub struct ProviderInfo {
     pub name: String,
     pub guid: GUID,
-    pub schema_source: u32,
+    pub _schema_source: u32,
 }
 
 pub fn enumerate_providers() -> Result<Vec<ProviderInfo>> {
@@ -56,7 +56,7 @@ pub fn enumerate_providers() -> Result<Vec<ProviderInfo>> {
                     providers.push(ProviderInfo {
                         name,
                         guid: provider.ProviderGuid,
-                        schema_source: provider.SchemaSource,
+                        _schema_source: provider.SchemaSource,
                     });
                 }
                 providers
