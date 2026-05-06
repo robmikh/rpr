@@ -6,12 +6,12 @@ description = "A utility to record ETW traces."
 edition = "2024"
 
 [dependencies]
-bytemuck = "1.22.0"
-clap = { version = "4.5.35", features = ["derive"] }
-wildmatch = "2.4.0"
+bytemuck = "1.25.0"
+clap = { version = "4.6.1", features = ["derive"] }
+wildmatch = "2.6.1"
 
 [dependencies.windows]
-version = "0.61.0"
+version = "0.62"
 features = [
     "Win32_Foundation",
     "Win32_System_Diagnostics_Etw",
